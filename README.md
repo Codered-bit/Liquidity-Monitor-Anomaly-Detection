@@ -70,3 +70,35 @@ Tech Stack
 * Pandas, NumPy
 * Matplotlib
 * Requests (API integration)
+Sample Outputs
+
+(screenshots from Streamlit here)
+
+* Price over time
+* Spread dynamics
+* Z-score anomaly detection
+
+⸻
+
+Key Insights
+
+* Spread widening often correlates with increased market volatility
+* Stable markets exhibit tighter spreads and lower Z-score variance
+* Z-score detection effectively identifies abnormal market conditions in real time
+
+⸻
+
+Limitations
+
+* Limited order book depth (top levels only)
+* Short observation window
+* Simple statistical model (no advanced ML yet)
+
+⸻
+
+Future Improvements
+
+* Real-time deployment using dashboard frameworks
+* Multi-exchange liquidity comparison
+* Advanced anomaly detection (e.g., clustering, ML models)
+* Liquidity quality scoring system
