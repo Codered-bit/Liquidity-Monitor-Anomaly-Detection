@@ -1,0 +1,119 @@
+{
+  "metadata": {
+    "kernelspec": {
+      "name": "xpython",
+      "display_name": "Python 3.13 (XPython)",
+      "language": "python"
+    },
+    "language_info": {
+      "file_extension": ".py",
+      "mimetype": "text/x-python",
+      "name": "python",
+      "version": "3.13.1"
+    }
+  },
+  "nbformat_minor": 5,
+  "nbformat": 4,
+  "cells": [
+    {
+      "id": "48b679fc-051f-455b-a330-b1ebc2917a7e",
+      "cell_type": "code",
+      "source": "# Crypto Liquidity Monitoring & Anomaly Detection\n\nThis project builds a simple liquidity monitoring system using live cryptocurrency market data.\n\n## Objectives\n- Track key liquidity metrics (spread, mid-price, depth)\n- Monitor changes in real time\n- Detect anomalies in trading conditions\n\n## Why this matters\nLiquidity is critical for efficient markets. Poor liquidity leads to:\n- Higher slippage\n- Wider spreads\n- Poor execution quality\n\nThis project simulates how trading platforms monitor liquidity health.",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "e6025545-b0b9-40de-ad43-01deab5025a7",
+      "cell_type": "code",
+      "source": "import requests\nimport pandas as pd\nimport numpy as np\nimport time\nimport matplotlib.pyplot as plt\nfrom collections import deque\n\nplt.style.use('default')",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "229fa567-4e1b-4bea-aca8-77bca5180cc3",
+      "cell_type": "code",
+      "source": "SYMBOL = \"BTCUSDT\"\n\nORDER_BOOK_LIMIT = 10\n\nWINDOW_SIZE = 20  # rolling window for anomaly detection\n\n# Thresholds (tune later)\n\nSPREAD_THRESHOLD = 1.5  # 50% increase\n\nPRICE_DEV_THRESHOLD = 0.01  # 1% deviation\n\n# Store historical values\n\nspread_history = deque(maxlen=WINDOW_SIZE)\n\nprice_history = deque(maxlen=WINDOW_SIZE)",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "c7c31adb-a8df-4aea-9c99-4a1b42f14836",
+      "cell_type": "code",
+      "source": "def get_order_book(symbol):\n\n    url = f\"https://api.binance.com/api/v3/depth?symbol={symbol}&limit={ORDER_BOOK_LIMIT}\"\n\n    data = requests.get(url).json()\n\n    bids = pd.DataFrame(data['bids'], columns=['price', 'quantity'], dtype=float)\n\n    asks = pd.DataFrame(data['asks'], columns=['price', 'quantity'], dtype=float)\n\n    return bids, asks\n\ndef get_price(symbol):\n\n    url = f\"https://api.binance.com/api/v3/ticker/price?symbol={symbol}\"\n\n    data = requests.get(url).json()\n\n    return float(data['price'])\n\ndef compute_metrics(bids, asks):\n\n    best_bid = bids['price'].max()\n\n    best_ask = asks['price'].min()\n\n    \n\n    mid_price = (best_bid + best_ask) / 2\n\n    spread = best_ask - best_bid\n\n    \n\n    bid_depth = bids['quantity'].sum()\n\n    ask_depth = asks['quantity'].sum()\n\n    \n\n    return {\n\n        \"mid_price\": mid_price,\n\n        \"spread\": spread,\n\n        \"bid_depth\": bid_depth,\n\n        \"ask_depth\": ask_depth\n\n    }\n\ndef detect_anomalies(current_spread, current_price):\n\n    alerts = []\n\n    # Spread anomaly\n\n    if len(spread_history) >= WINDOW_SIZE:\n\n        avg_spread = np.mean(spread_history)\n\n        if current_spread > avg_spread * SPREAD_THRESHOLD:\n\n            alerts.append(\"⚠️ Spread widening anomaly detected\")\n\n    # Price deviation anomaly\n\n    if len(price_history) >= WINDOW_SIZE:\n\n        avg_price = np.mean(price_history)\n\n        deviation = abs(current_price - avg_price) / avg_price\n\n        if deviation > PRICE_DEV_THRESHOLD:\n\n            alerts.append(\"⚠️ Price deviation anomaly detected\")\n\n    return alerts",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "1b85244d-705e-44c6-9e6a-89cfe1b37197",
+      "cell_type": "code",
+      "source": "print(f\"Starting liquidity monitor for {SYMBOL}...\\n\")\n\nwhile True:\n\n    try:\n\n        bids, asks = get_order_book(SYMBOL)\n\n        price = get_price(SYMBOL)\n\n        metrics = compute_metrics(bids, asks)\n\n        # Store history\n\n        spread_history.append(metrics['spread'])\n\n        price_history.append(price)\n\n        # Detect anomalies\n\n        alerts = detect_anomalies(metrics['spread'], price)\n\n        # Output\n\n        print(f\"Price: {price:.2f}\")\n\n        print(f\"Mid Price: {metrics['mid_price']:.2f}\")\n\n        print(f\"Spread: {metrics['spread']:.4f}\")\n\n        print(f\"Bid Depth: {metrics['bid_depth']:.2f} | Ask Depth: {metrics['ask_depth']:.2f}\")\n\n        if alerts:\n\n            for alert in alerts:\n\n                print(alert)\n\n        print(\"-\" * 50)\n\n        time.sleep(5)  # fetch every 5 seconds\n\n    except Exception as e:\n\n        print(\"Error:\", e)\n\n        time.sleep(5)",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "d2110fb9-6f04-4213-a465-3728f4ea236a",
+      "cell_type": "code",
+      "source": "df['price'].plot(title=\"Price Over Time\")\nplt.xlabel(\"Iteration\")\nplt.ylabel(\"Price\")\nplt.show()\n\ndf['spread'].plot(title=\"Spread Over Time\")\nplt.xlabel(\"Iteration\")\nplt.ylabel(\"Spread\")\nplt.show()",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "c52fe818-61f2-458b-97dc-467c4418b235",
+      "cell_type": "code",
+      "source": "# Rolling statistics\ndf['price_mean'] = df['price'].rolling(WINDOW_SIZE).mean()\ndf['price_std'] = df['price'].rolling(WINDOW_SIZE).std()\n\ndf['spread_mean'] = df['spread'].rolling(WINDOW_SIZE).mean()\ndf['spread_std'] = df['spread'].rolling(WINDOW_SIZE).std()\n\n# Z-scores\ndf['price_z'] = (df['price'] - df['price_mean']) / df['price_std']\ndf['spread_z'] = (df['spread'] - df['spread_mean']) / df['spread_std']",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "127fe854-9dba-4f33-ac02-f9d04ca78d0d",
+      "cell_type": "code",
+      "source": "df['price_anomaly'] = df['price_z'].abs() > Z_THRESHOLD\ndf['spread_anomaly'] = df['spread_z'].abs() > Z_THRESHOLD\n\ndf[['price', 'price_z', 'price_anomaly',\n    'spread', 'spread_z', 'spread_anomaly']].tail(10)",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "56d5549f-d481-45aa-bc89-342d66ae3224",
+      "cell_type": "code",
+      "source": "# Price plot\ndf['price'].plot(title=\"Price Over Time\")\nplt.xlabel(\"Iteration\")\nplt.ylabel(\"Price\")\nplt.show()\n\n# Spread plot\ndf['spread'].plot(title=\"Spread Over Time\")\nplt.xlabel(\"Iteration\")\nplt.ylabel(\"Spread\")\nplt.show()\n\n# Z-score plots\ndf['price_z'].plot(title=\"Price Z-Score\")\nplt.axhline(2)\nplt.axhline(-2)\nplt.show()\n\ndf['spread_z'].plot(title=\"Spread Z-Score\")\nplt.axhline(2)\nplt.axhline(-2)\nplt.show()",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    },
+    {
+      "id": "86bbdc9e-bf33-4e65-82cf-0d2eb12e401a",
+      "cell_type": "code",
+      "source": "",
+      "metadata": {
+        "trusted": true
+      },
+      "outputs": [],
+      "execution_count": null
+    }
+  ]
+}
