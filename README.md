@@ -102,3 +102,6 @@ Future Improvements
 * Multi-exchange liquidity comparison
 * Advanced anomaly detection (e.g., clustering, ML models)
 * Liquidity quality scoring system
+Live Demo
+
+(Streamlit link)
